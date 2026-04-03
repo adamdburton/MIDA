@@ -637,11 +637,11 @@ public partial class CategoryView : UserControl
                 //        item.Item = Investment.Get().GetInventoryItem(gearSet.ItemList.First().ItemIndex);
                 //}
 
-                if (item.Item.GetArtArrangementIndex() != -1)
+                if (item.Item.GetArtArrangementIndex() != -1 || item.Item.GetWeaponPatternIndex() != -1)
                 {
                     EntityView.ExportInventoryItem(item, ConfigSubsystem.Get().GetExportSavePath());
                 }
-                else
+                else if (APIView.IsShaderItem(item.ItemType))
                 {
                     // shader
                     ConfigSubsystem config = TigerInstance.GetSubsystem<ConfigSubsystem>();
@@ -651,6 +651,14 @@ public partial class CategoryView : UserControl
                     Directory.CreateDirectory(savePath);
                     Directory.CreateDirectory(savePath + "/Textures");
                     Investment.Get().ExportShader(item.Item, savePath, itemName, config.GetOutputTextureFormat());
+                }
+                else if (APIView.IsContractLikeItem(item.Item, item.ItemType))
+                {
+                    Console.WriteLine($"Skipping contract export for {item.ItemName}: no model or shader payload was found.");
+                }
+                else
+                {
+                    Console.WriteLine($"Skipping unsupported collection item export for {item.ItemName} ({item.ItemType}).");
                 }
             });
             MainWindow.Progress.CompleteStage();
@@ -730,4 +738,3 @@ public class SubcategoryChildItemTemplateSelector : DataTemplateSelector
         return itemObj != null && itemObj.IsPlaceholder ? PlaceholderTemplate : NormalItemTemplate;
     }
 }
-
