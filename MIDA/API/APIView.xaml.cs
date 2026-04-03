@@ -160,20 +160,12 @@ public partial class APIView : UserControl
             _selectedItems.ToList().ForEach(item =>
             // Parallel.ForEach(_selectedItems, item =>
             {
-
-                //if (item.ItemType == "Artifact" && item.Item.TagData.Unk28.GetValue(item.Item.GetReader()) is SC5738080 gearSet)
-                //{
-                //    if (gearSet.ItemList.Count != 0)
-                //        item.Item = Investment.Get().GetInventoryItem(gearSet.ItemList.First().ItemIndex);
-                //}
-
-                //if (item.Item.GetArtArrangementIndex() != -1)
-                if (item.Item.GetWeaponPatternIndex() != -1)
+                if (item.Item.GetArtArrangementIndex() != -1 || item.Item.GetWeaponPatternIndex() != -1)
                 {
                     // if has a model
                     EntityView.ExportInventoryItem(item, savePath, aggregateOutput);
                 }
-                else
+                else if (IsShaderItem(item.ItemType))
                 {
                     // shader
                     string itemName = Helpers.SanitizeString(item.ItemName);
@@ -182,6 +174,14 @@ public partial class APIView : UserControl
                     Directory.CreateDirectory(savePath);
                     Directory.CreateDirectory(savePath + "/Textures");
                     Investment.Get().ExportShader(item.Item, savePath, itemName, config.GetOutputTextureFormat());
+                }
+                else if (IsContractLikeItem(item.Item, item.ItemType))
+                {
+                    Console.WriteLine($"Skipping contract export for {item.ItemName}: no model or shader payload was found.");
+                }
+                else
+                {
+                    Console.WriteLine($"Skipping unsupported API item export for {item.ItemName} ({item.ItemType}).");
                 }
                 MainWindow.Progress.CompleteStage();
             });
@@ -305,13 +305,61 @@ public partial class APIView : UserControl
             "Shader",
         };
 
-        var a = Investment.Get().GetItemStrings(Investment.Get().GetItemIndex(item.TagData.InventoryItemHash));
-        var b = a.TagData.ItemType.Value.ToString();
         return (item.GetArtArrangementIndex() != -1 ||
+            item.GetWeaponPatternIndex() != -1 ||
+            IsContractLikeItem(item, type) ||
             // Whitelist
             whitelist.Any(x => type.ToLower().Contains(x.ToLower()))) &&
             // Blacklist
             !blacklist.Any(x => type.ToLower().Contains(x.ToLower()));
+    }
+
+    public static bool IsShaderItem(string? type)
+    {
+        if (string.IsNullOrEmpty(type))
+            return false;
+
+        return type.Contains("Shader", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsContractLikeItem(InventoryItem item, string? type)
+    {
+        var investment = Investment.Get();
+
+        if (!string.IsNullOrEmpty(type))
+        {
+            if (type.Contains("Contract", StringComparison.OrdinalIgnoreCase) ||
+                type.Contains("Bounty", StringComparison.OrdinalIgnoreCase) ||
+                type.Contains("Quest", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        int itemIndex = investment.GetItemIndex(item.TagData.InventoryItemHash);
+        var itemStrings = investment.GetItemStrings(itemIndex);
+        if (itemStrings is null)
+            return false;
+
+        if (itemStrings.TagData.TooltipStyle is DestinyTooltipStyle.Bounty or DestinyTooltipStyle.Quest)
+            return true;
+
+        try
+        {
+            using TigerReader reader = itemStrings.GetReader();
+            if (itemStrings.TagData.Unk20.GetValue(reader) is SD7548080 preview &&
+                preview.ScreenStyle == DestinyScreenStyle.Pursuit)
+            {
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            string itemName = investment.GetItemName(item);
+            Console.WriteLine($"Failed to parse contract preview metadata for {itemName} ({item.TagData.InventoryItemHash}): {ex.Message}");
+        }
+
+        return false;
     }
 
 

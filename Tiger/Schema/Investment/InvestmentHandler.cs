@@ -384,6 +384,18 @@ public class Investment : Strategy.LazyStrategistSingleton<Investment>
             return null;
     }
 
+    /// <summary>
+    /// Lightweight check: returns whether a raw hash32 value is a known inventory item hash,
+    /// and if so, writes its index into <paramref name="index"/>. Does not load the item from disk.
+    /// </summary>
+    public bool TryGetInventoryItemIndex(uint hash32, out int index)
+    {
+        if (_inventoryItemIndexmap != null && _inventoryItemIndexmap.TryGetValue(hash32, out index))
+            return true;
+        index = -1;
+        return false;
+    }
+
     public InventoryItem GetInventoryItem(TigerHash hash)
     {
         return GetInventoryItem(_inventoryItemIndexmap[hash]);
