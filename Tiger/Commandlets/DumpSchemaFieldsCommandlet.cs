@@ -7,7 +7,7 @@ namespace Tiger.Commandlets;
 /// <summary>
 /// Loads the raw binary data for a single file by its hash, writes a binary dump to disk,
 /// and produces an annotated text listing that cross-references every 4-byte word against
-/// the known inventory-item index.  The annotation output is the primary artefact: it lets
+/// the known inventory-item index.  The annotation output is the primary artifact: it lets
 /// you read a definition-table file you have not mapped yet and quickly identify which words
 /// are item hashes, what their index positions are, and — by observing how often annotated
 /// offsets repeat — what the entry stride (i.e. the serialised size of one entry) is.

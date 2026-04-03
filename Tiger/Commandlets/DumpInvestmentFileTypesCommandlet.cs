@@ -75,7 +75,7 @@ public class DumpInvestmentFileTypesCommandlet : ICommandlet
         string databasePath = $"./InvestmentFileDatabases/{Strategy.CurrentStrategy}.db";
         string connectionString = $"Data Source=\"{databasePath}\";Version=3;";
 
-        Directory.CreateDirectory(Path.GetDirectoryName(databasePath));
+        Directory.CreateDirectory(Path.GetDirectoryName(databasePath) ?? ".");
         SQLiteConnection.CreateFile(databasePath);
 
         using SQLiteConnection connection = new(connectionString);
